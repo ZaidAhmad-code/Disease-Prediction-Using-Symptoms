@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedPredict - AI Disease Prediction</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --background: #0a192f;
+            --card-bg: #172a45;
+            --text: #ccd6f6;
+            --text-light: #8892b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .symptom-input-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        input, datalist {
+            flex: 1;
+            padding: 0.8rem;
+            background: #2c3d5c;
+            border: 2px solid #2c3d5c;
+            border-radius: 8px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: var(--background);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        #selected-symptoms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        #selected-symptoms li {
+            background: #2c3d5c;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .remove-symptom {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .remove-symptom:hover {
+            color: var(--primary);
+        }
+
+        .prediction-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .prediction-text {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .symptom-input-container {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-heartbeat"></i> MedPredict</h1>
+            <p class="tagline">AI-powered disease prediction system</p>
+        </header>
+
+        <main>
+            <div class="input-group">
+                <form method="POST">
+                    <div class="symptom-input-container">
+                        <input list="symptoms" id="symptom-input" placeholder="Enter a symptom...">
+                        <datalist id="symptoms">
+                            {% for symptom in symptoms %}
+                            <option value="{{ symptom }}">
+                            {% endfor %}
+                        </datalist>
+                        <button type="button" onclick="addSymptom()">
+                            <i class="fas fa-plus"></i> Add Symptom
+                        </button>
+                    </div>
+
+                    <ul id="selected-symptoms">
+                        <!-- Selected symptoms will be listed here -->
+                    </ul>
+
+                    <button type="submit" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-brain"></i> Predict Disease
+                    </button>
+                </form>
+            </div>
+
+            {% if prediction %}
+            <div class="prediction-card">
+                <p class="prediction-text">Most Likely Diagnosis:</p>
+                <h2 class="prediction-result">{{ prediction }}</h2>
+                <small class="disclaimer">Consult a medical professional for accurate diagnosis</small>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        function addSymptom() {
+            const input = document.getElementById("symptom-input");
+            const value = input.value.trim();
+            
+            if (value !== "") {
+                const list = document.getElementById("selected-symptoms");
+                
+                // Check for duplicates
+                const existingItems = Array.from(list.children).filter(li => 
+                    li.textContent.includes(value)
+                );
+                
+                if (existingItems.length === 0) {
+                    const item = document.createElement("li");
+                    
+                    // Visible element
+                    item.innerHTML = `
+                        ${value}
+                        <button class="remove-symptom" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+
+                    // Hidden input
+                    const hiddenInput = document.createElement("input");
+                    hiddenInput.type = "hidden";
+                    hiddenInput.name = "symptoms";
+                    hiddenInput.value = value;
+                    item.appendChild(hiddenInput);
+
+                    list.appendChild(item);
+                }
+                
+                input.value = "";
+                input.focus();
+            }
+        }
+    </script>
+</body>
+</html>
